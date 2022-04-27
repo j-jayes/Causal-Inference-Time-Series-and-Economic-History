@@ -1,0 +1,52 @@
+---
+title: "Okun's Law"
+format: html
+---
+## Purpose
+
+Translate the code from session 1 to R.
+
+### Read in data
+
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+
+df <- readxl::read_excel(here::here("course-content/Class 1/Okun's Law.xlsx"), range = "A1:E45")
+
+df <- df %>% 
+  janitor::clean_names()
+```
+
+### EDA
+
+```{r}
+df %>%
+  ggplot(aes(x = change_in_unemployment_rate_pp, y = real_gdp_growth_percent)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_vline(xintercept = 0, lty = 2) +
+  geom_hline(yintercept = 0, lty = 2) +
+  labs(
+    x = "Change in unemployment rate",
+    y = "Real GDP Growth",
+    title = "Okun's Law in the UK",
+    subtitle = "1871-1913"
+  )
+
+```
+
+
+```{r}
+lm <- lm(real_gdp_growth_percent ~ change_in_unemployment_rate_pp, data = df)
+
+lm %>%
+  broom::tidy()
+
+lm %>% 
+  gtsummary::tbl_regression(intercept = T) 
+  
+```
+
