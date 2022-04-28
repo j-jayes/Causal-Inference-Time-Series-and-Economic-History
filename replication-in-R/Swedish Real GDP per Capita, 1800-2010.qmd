@@ -1,0 +1,181 @@
+---
+title: "Swedish Real GDP per Capita, 1800-2010"
+format: html
+---
+
+## Purpose
+
+Translate the code from session 2 to R.
+
+### Read in data
+
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+df <- readxl::read_excel(here::here("course-content/Class 2/Swedish Real GDP per Capita, 1800-2010.xlsx"))
+
+df <- df %>% 
+  janitor::clean_names()
+
+df <- df %>% 
+  mutate(ln_real_gdp_per_capita = log(real_gdp_per_capita)*100)
+```
+
+### EDA
+
+```{r}
+df %>% 
+  ggplot(aes(year, real_gdp_per_capita)) +
+  geom_point() +
+  geom_line()
+
+df %>% 
+  ggplot(aes(year, ln_real_gdp_per_capita)) +
+  geom_point() +
+  geom_line()
+```
+
+### Reproduce Figure 5
+
+In the function below we do a number of things
+
+I walk through each:
+
+1. We have two inputs, the smoothing factor, `sf` and a label called `label`.
+
+2. From the **mFilter** library we call **hpfilter** on the logged version of the real gdp series. We supply the smoothing factor with command `freq = sf`. This is assigned to hp as an **mFilter** list object.
+
+3. We create a **tibble** from this object which is easier to work with.
+
+4. We create our differenced variables for the cycle and trend components.
+
+5. We save this tibble as an RDS file with the label we provide as an argument to the function.
+
+6. We then plot the series components as a **ggplot**, faceting by the components.
+
+```{r}
+# tsfilter hp HP_Cycle_100 = ln_RealGDPperCapita, smooth(100) trend(HP_Trend_100)
+
+library(mFilter)
+
+plot_hp_filter <- function(sf, label) {
+  message("Plotting HP filtered series with smoothing factor ", sf)
+  hp <- mFilter::hpfilter(df$ln_real_gdp_per_capita, freq = sf)
+
+  df_hp <- tibble(
+    year = df$year,
+    cycle = hp$cycle,
+    # don't know why this is hp$trend[,1]?
+    trend = hp$trend[, 1]
+  )
+
+  df_hp <- df_hp %>%
+    mutate(
+      d_cycle = cycle - lag(cycle),
+      d_trend = trend - lag(trend),
+      reg = label
+    )
+
+  df_hp %>% write_rds(here::here(paste0("course-content/Class 2/", label, ".rds")))
+
+  df_hp %>%
+    pivot_longer(cycle:d_trend) %>%
+    mutate(name = fct_relevel(name, "d_trend", after = 3L)) %>%
+    ggplot(aes(year, value, colour = name)) +
+    geom_line(show.legend = F) +
+    facet_wrap(~name, nrow = 2, scales = "free") +
+    labs(
+      x = "Year",
+      y = "ln_RealGDPperCapita cycle and trend components from hp filter",
+      title = paste0("Smoothing factor ", sf)
+    )
+}
+
+plot_hp_filter(100, "smoothing_100")
+
+```
+
+### Reproduce figure 6
+
+```{r}
+# tsfilter hp HP_Cycle_10000 = ln_RealGDPperCapita, smooth(10000) trend(HP_Trend_10000)
+
+plot_hp_filter(1000, "smoothing_1000")
+
+```
+
+### Comparison
+
+```{r}
+# tsfilter hp HP_Cycle_6 = ln_RealGDPperCapita, smooth(6.25) trend(HP_Trend_6)
+
+plot_hp_filter(6.25, "smoothing_6_25")
+
+```
+
+### OLS
+
+
+```{r}
+# reg ln_RealGDPperCapita Year
+# predict OLS_Lin_Trend, xb
+# predict OLS_Lin_Cycle, res
+
+lm <- lm(ln_real_gdp_per_capita ~ year, data = df)
+
+df_lm <- lm %>% 
+  broom::augment()
+```
+
+Exploratory plots
+
+```{r}
+df_lm %>%
+  ggplot(aes(ln_real_gdp_per_capita, .fitted)) +
+  geom_point() +
+  geom_abline() +
+  labs(
+    x = "Natural log of Real GDP per capita",
+    y = "Fitted values",
+    title = "Plot of actual vs predicted values"
+  )
+
+df_lm %>%
+  ggplot(aes(year, .resid)) +
+  geom_point() +
+  geom_abline() +
+  labs(
+    x = "Year",
+    y = "Residual values",
+    title = "Plot of residual values over time"
+  )
+```
+
+```{r}
+# gen Year2 = Year^2
+# reg ln_RealGDPperCapita Year Year2
+# predict OLS_Nonlin_Trend, xb
+# predict OLS_Nonlin_Cycle, res
+
+df <- df %>% 
+  mutate(year_2 = year^2)
+
+df_lm_year_2 <- lm(ln_real_gdp_per_capita ~ year_2, data = df)
+
+df_lm_year_2 <- df_lm_year_2 %>% 
+  broom::augment() %>% 
+  mutate(reg = "")
+```
+
+### Hamilton
+
+For yearly data:
+
+yt+2 = β0 + β1yt + ut+2
+
+```{r}
+
+```
+
+
+
