@@ -1,13 +1,22 @@
 ---
 title: "Swedish Real GDP per Capita, 1800-2010"
 format: html
----
+image: ""
 
+---
 ## Purpose
 
 Translate the code from session 2 to R.
 
 ### Read in data
+
+```{r, include=F}
+
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      message = F, warning = F) 
+
+```
+
 
 ```{r}
 library(tidyverse)
@@ -23,7 +32,7 @@ df <- df %>%
 
 ### EDA
 
-```{r}
+```{r, fig.width=6, fig.height=4}
 df %>% 
   ggplot(aes(year, real_gdp_per_capita)) +
   geom_point() +
@@ -76,10 +85,11 @@ plot_hp_filter <- function(sf, label) {
       reg = label
     )
 
-  df_hp %>% write_rds(here::here(paste0("course-content/Class 2/", label, ".rds")))
+  df_hp %>% write_rds(here::here(paste0("replication-in-R/Class 2/", label, ".rds")))
 
   df_hp %>%
     pivot_longer(cycle:d_trend) %>%
+    # this puts the facets in a nice order
     mutate(name = fct_relevel(name, "d_trend", after = 3L)) %>%
     ggplot(aes(year, value, colour = name)) +
     geom_line(show.legend = F) +
@@ -90,92 +100,238 @@ plot_hp_filter <- function(sf, label) {
       title = paste0("Smoothing factor ", sf)
     )
 }
+```
 
-plot_hp_filter(100, "smoothing_100")
+
+```{r}
+#| column: page
+plot_hp_filter(100, "hp_100")
 
 ```
 
 ### Reproduce figure 6
 
 ```{r}
+#| column: page
 # tsfilter hp HP_Cycle_10000 = ln_RealGDPperCapita, smooth(10000) trend(HP_Trend_10000)
 
-plot_hp_filter(1000, "smoothing_1000")
+plot_hp_filter(1000, "hp_1000")
 
 ```
 
 ### Comparison
 
 ```{r}
+#| column: page
 # tsfilter hp HP_Cycle_6 = ln_RealGDPperCapita, smooth(6.25) trend(HP_Trend_6)
 
-plot_hp_filter(6.25, "smoothing_6_25")
+plot_hp_filter(6.25, "hp_6_25")
 
+```
+
+## Regression smoothing
+
+Here we use our `mutate` command to create the variables we will need for the quadratic regression and the Hamilton filter.
+
+```{r}
+df <- df %>% 
+  mutate(year_2 = year^2,
+         l2_ln_real_gdp_per_capita = lag(ln_real_gdp_per_capita, n = 2))
+```
+
+Now we create a function that will take a list of variables and a label. It does a regression, prints a summary of the regression and then makes a plot of the original logged series and a trend line created from the coefficients in the regression.
+
+```{r}
+augment_reg <- function(var, label) {
+  df_temp <- df %>%
+    select(ln_real_gdp_per_capita, {{ var }})
+
+  reg <- lm(ln_real_gdp_per_capita ~ ., data = df_temp)
+
+  summary <- reg %>% summary()
+
+  df_reg <- reg %>%
+    broom::augment() %>%
+    mutate(
+      trend = .fitted,
+      cycle = .resid,
+      d_cycle = cycle - lag(cycle),
+      d_trend = trend - lag(trend),
+      reg = label
+    )
+
+  df_reg %>% write_rds(here::here(paste0("replication-in-R/Class 2/", label, ".rds")))
+
+  plot <- df_reg %>%
+    pivot_longer(cols = c(ln_real_gdp_per_capita, trend)) %>%
+    ggplot(aes(year, value, colour = name)) +
+    geom_line()
+  
+  out <- list(summary, plot)
+  
+  return(out)
+  
+}
 ```
 
 ### OLS
 
+#### Linear
+
+The linear regression obviously produces a nice straight regression line.
 
 ```{r}
+#| column: page
 # reg ln_RealGDPperCapita Year
 # predict OLS_Lin_Trend, xb
 # predict OLS_Lin_Cycle, res
 
-lm <- lm(ln_real_gdp_per_capita ~ year, data = df)
-
-df_lm <- lm %>% 
-  broom::augment()
+augment_reg(year, "linear_reg")
 ```
 
-Exploratory plots
+#### Quadratic
+
+The quadratic regression produces a lovely parabolic shape.
 
 ```{r}
-df_lm %>%
-  ggplot(aes(ln_real_gdp_per_capita, .fitted)) +
-  geom_point() +
-  geom_abline() +
-  labs(
-    x = "Natural log of Real GDP per capita",
-    y = "Fitted values",
-    title = "Plot of actual vs predicted values"
-  )
-
-df_lm %>%
-  ggplot(aes(year, .resid)) +
-  geom_point() +
-  geom_abline() +
-  labs(
-    x = "Year",
-    y = "Residual values",
-    title = "Plot of residual values over time"
-  )
-```
-
-```{r}
+#| column: page
 # gen Year2 = Year^2
 # reg ln_RealGDPperCapita Year Year2
 # predict OLS_Nonlin_Trend, xb
 # predict OLS_Nonlin_Cycle, res
 
-df <- df %>% 
-  mutate(year_2 = year^2)
-
-df_lm_year_2 <- lm(ln_real_gdp_per_capita ~ year_2, data = df)
-
-df_lm_year_2 <- df_lm_year_2 %>% 
-  broom::augment() %>% 
-  mutate(reg = "")
+augment_reg(c(year, year_2), "quadratic_reg")
 ```
 
 ### Hamilton
 
-For yearly data:
+For yearly data: yt+2 = β0 + β1yt + ut+2.
 
-yt+2 = β0 + β1yt + ut+2
+I think this is wrong though?
 
 ```{r}
+# reg ln_RealGDPperCapita L2.ln_RealGDPperCapita
+# predict Ham_Trend, xb
+# predict Ham_Cycle, res
 
+lm_hamilton <- lm(ln_real_gdp_per_capita ~ l2_ln_real_gdp_per_capita, data = df)
+
+lm_hamilton %>% 
+  summary()
+
+df_lm_hamilton <- lm_hamilton %>% 
+  broom::augment() %>% 
+  bind_cols(df %>% 
+              select(year) %>% 
+              tail(209)) %>% 
+  select(-.rownames)
+
+df_lm_hamilton %>%
+  mutate(reg = "hamilton") %>%
+  mutate(
+    trend = .fitted,
+    cycle = .resid,
+    d_cycle = cycle - lag(cycle),
+    d_trend = trend - lag(trend),
+  ) %>%
+  write_rds(here::here(paste0("replication-in-R/Class 2/", "hamilton", ".rds")))
 ```
 
 
+```{r}
+#| column: page
+df_lm_hamilton %>% 
+  pivot_longer(cols = c(ln_real_gdp_per_capita, .fitted)) %>% 
+  ggplot(aes(year, value, colour = name)) +
+  geom_line()
+```
+
+## Comparison
+
+Read in all of the data
+
+```{r}
+filelist <- list.files(here::here(paste0("replication-in-R/Class 2/")), pattern = ".rds") %>%
+  as_tibble() %>%
+  rename(filename = value) %>%
+  mutate(path = str_c(here::here(paste0("replication-in-R/Class 2/", filename))))
+
+df_long <- filelist %>%
+  mutate(data = purrr::map(path, read_rds))
+
+df_long <- df_long %>%
+  select(-c(filename, path)) %>%
+  unnest(cols = c(data))
+```
+
+### Comparison of all components
+
+```{r}
+#| column: page
+df_long %>%
+  pivot_longer(cols = c(trend, cycle, d_trend, d_cycle)) %>%
+  mutate(name = fct_relevel(name, "d_trend", after = 3L)) %>%
+  ggplot(aes(year, value, colour = reg)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free_y") +
+  labs(x = "Year",
+       y = NULL,
+       colour = "Smoother")
+```
+
+### Comparison of trend components
+
+```{r}
+#| column: page
+df_long %>%
+  pivot_longer(cols = c(trend, cycle, d_trend, d_cycle)) %>%
+  filter(name == "trend") %>% 
+  ggplot(aes(year, value, colour = reg)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free_y") +
+  labs(x = "Year",
+       y = NULL,
+       colour = "Smoother")
+```
+
+### Comparison of cycle components
+
+```{r}
+#| column: page
+df_long %>%
+  pivot_longer(cols = c(trend, cycle, d_trend, d_cycle)) %>%
+  filter(name == "cycle") %>% 
+  ggplot(aes(year, value, colour = reg)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free_y") +
+  labs(x = "Year",
+       y = NULL,
+       colour = "Smoother")
+```
+
+### Correlation
+
+```{r}
+library(corrr)
+
+corr <- df_long %>% 
+  select(year, reg, cycle) %>% 
+  pivot_wider(names_from = reg, values_from = cycle) %>% 
+  select(-year) %>% 
+  correlate() %>% 
+  rearrange() %>% 
+  shave()
+
+corr %>% 
+  knitr::kable(digits = 3)
+```
+
+We can visualize this nicely too
+
+```{r}
+#| column: page
+
+corr %>% 
+  rplot(shape = 15, colours = c("darkorange", "darkcyan", "pink"), print_cor = T)
+```
 

@@ -1,0 +1,39 @@
+/*-- scss:defaults --*/
+$font-size-root:            12 !default;
+$headings-font-weight:      500 !default;
+$body-color:                #404040 !default;
+$link-color:                #97D0D7 !default;
+$footer-fg:                 #23A7CE !default;
+$font-family-sans-serif:    "Lato", sans-serif !default;
+$font-family-monospace:     "IBM Plex Mono", monospace !default;
+$font-family-headings:      "Noto Serif JP", sans-serif !default;
+$heading-color:             #2b8cbe !default;
+ 
+/*-- scss:rules --*/
+
+.layout-example {
+  background: $gray-500;
+  color: $white;
+  text-align: center;
+  margin-bottom: 1em;
+  font-family: $font-family-monospace;
+  font-size: .875em;
+  font-weight: 600;
+  padding-top: 1em;
+  border-radius: 3px;
+}
+
+.left {
+  text-align: left;
+  padding-left: 1em;
+}
+
+.right {
+  text-align: right;
+  padding-right: 1em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font: $font-family-headings;
+  color: $heading-color;
+}

@@ -1,0 +1,255 @@
+---
+title: "Kelly and O Grada (2013)"
+format: html
+---
+
+## Purpose
+
+Translate the code from session 3 to R.
+
+### Read in data
+
+```{r}
+library(tidyverse)
+theme_set(theme_light())
+
+df <- readxl::read_excel(here::here("course-content/Class 3/Kelly and O Grada (2013).xlsx"),
+                         range = "A1:F256")
+
+# tidy up variable names
+df <- df %>% 
+  janitor::clean_names()
+```
+
+### Changes
+
+```{r}
+df <- df %>%
+  mutate(
+    real_gdp_pc = real_gdp / population,
+    real_agricultural_output_pc = real_agricultural_output / population,
+    # create logs with prefix ln_
+    across(c(crude_death_rate:real_wage, contains("_pc")), log, .names = "ln_{.col}"),
+    # create differences with prefix d_
+    across(c(contains("ln_")), ~ . - lag(., 1), .names = "d_{.col}"))
+```
+
+Now making the lags of the differenced variables:
+I don't love this for loop - but I don't know a better way yet. Perhaps using the `recipes` package?
+
+```{r}
+for (i in 1:4) {
+  message("making d_ for ", i)
+  df <- df %>%
+    mutate(across(starts_with("d_ln"), ~ lag(., i), .names = paste0("l", i, "_{.col}")))
+}
+```
+
+### What about using the recipes package?
+
+```{r}
+# library(recipes)
+# 
+# rec <- recipe(d_ln_crude_death_rate ~ ., data = df) %>% 
+#   step_log(c(crude_death_rate:real_wage, contains("_pc")), id = rand_id(prefix = "ln_"))
+# 
+# 
+# rec %>% prep() %>% bake(new_data = NULL)
+```
+
+
+
+```{r}
+#| column: page
+df %>% 
+  skimr::skim()
+```
+
+### (Approximately) Reproduce Table 6
+
+What are we doing?
+
+- 3 sets of regressions
+- Change in crude death rate is dependent var
+- 5 time periods
+
+We should use the many models approach from R4DS because we're doing similar regressions on different sections of the data frame.
+
+```{r}
+periods <- tibble(left = c(
+  1546,
+  1600,
+  1650,
+  1700,
+  1750
+)) %>%
+  mutate(
+    right = case_when(
+      left == 1546 ~ 1599,
+      TRUE ~ left + 49
+    ),
+    period = row_number()
+  )
+
+periods <- periods %>% 
+  group_by(period) %>% 
+  mutate(year = paste0(left:right, collapse = ", ")) %>% 
+  ungroup() %>% 
+  separate_rows(year, sep = ", ", convert = T) %>% 
+  dplyr::select(-c(left, right))
+
+df_by_period <- df %>% 
+  inner_join(periods)
+
+df_by_period <- df_by_period %>% 
+  filter(!is.na(period)) %>%
+  group_by(period) %>%
+  nest() 
+```
+
+Function to do regression
+
+```{r}
+reg_model <- function(df, vars){
+  df_temp <- df %>% 
+    dplyr::select(d_ln_crude_death_rate, vars)
+  
+  lm(d_ln_crude_death_rate ~ ., data = df_temp)
+}
+```
+
+### First regression model
+
+```{r}
+df_by_period_reg <- df_by_period %>%
+  mutate(model = map(data, ~ reg_model(df = .,
+                                       vars = 
+                                         c(contains("_d_ln_real_wage"), 
+                                           contains("d_ln_crude_death_rate")))))
+```
+
+What do the regression outputs look like?
+
+```{r}
+df_by_period_reg %>% 
+  mutate(summary = map(model, summary)) %>% 
+  pull(summary)
+```
+
+How can we format these better??
+
+```{r}
+df_by_period_reg %>% 
+  mutate(tidy = map(model, ~ broom::tidy(., conf.int = T))) %>% 
+  unnest(tidy) %>% 
+  filter(term != "(Intercept)") %>% 
+  mutate(term = fct_reorder(term, estimate)) %>% 
+  ggplot(aes(estimate, term, colour = factor(period))) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high)) +
+  facet_wrap(~ period) +
+  geom_vline(xintercept = 0, lty = 2)
+```
+
+```{r}
+# df_by_period_reg %>% 
+#   mutate(reg = map(model, gtsummary::tbl_regression)) %>% 
+#   pull(reg)
+```
+
+
+```{r}
+df_by_period_reg %>%
+  mutate(augment = map(model, broom::augment)) %>%
+  unnest(augment) %>%
+  # remove the first four NA years because of the lags (4 lags)
+  bind_cols(periods %>% tail(250) %>% dplyr::select(-period)) %>%
+  ggplot(aes(year, .fitted, group = period, colour = factor(period))) +
+  geom_line(alpha = 1 / 3) +
+  geom_smooth(se = FALSE)
+```
+
+### Evaluate the residuals
+
+Regression:
+
+dependent variable: first difference of logged crude death rate
+
+independent variables: lags 1 through 4 of first diff of ln crude death rate and first diff of ln real gdp per capita
+
+```{r}
+# reg d.LnCrudeDeathRate L(1/4)d.LnCrudeDeathRate L(0/4)d.LnRealGDPpc if tin(1546,1599)
+# predict Residuals if tin(1546,1599), res /* generate the residuals as a new variable */ 
+# tsline Residuals if tin(1546,1599) /* plot the residuals */
+```
+
+```{r}
+reg_1 <- df %>%
+  filter(between(year, 1546, 1599)) %>%
+  dplyr::select(c(
+    contains("d_ln_real_gdp_pc"),
+    contains("d_ln_crude_death_rate")
+  )) %>%
+  lm(d_ln_crude_death_rate ~ ., data = .)
+
+reg_1 %>% 
+  tbl_regression() %>% 
+  add_significance_stars()
+```
+
+Plot the residuals
+
+```{r}
+reg_1_augmented <- reg_1 %>% 
+  broom::augment() %>% 
+  bind_cols(periods %>%
+    dplyr::select(year) %>%
+    slice(5L:54L))
+
+reg_1_augmented %>% 
+  ggplot(aes(year, .resid)) +
+  geom_line(colour = "red")
+```
+
+### Dickey fuller tests
+
+```{r}
+library(vars)
+
+adf_test_trend <- ur.df(reg_1_augmented$.resid, type = "trend")
+
+adf_test_trend %>% summary()
+```
+
+
+```{r}
+adf_test_none <- ur.df(reg_1_augmented$.resid, type = "none")
+
+adf_test_none %>% summary()
+```
+
+```{r}
+adf_test_drift <- ur.df(reg_1_augmented$.resid, type = "drift")
+
+adf_test_drift %>% summary()
+```
+
+### Breusch–Pagan Test to Check Heteroscedasticity
+
+```{r}
+library(plm)
+
+df_bp <- df %>%
+  dplyr::filter(dplyr::between(year, 1546, 1599)) %>%
+  dplyr::select(c(
+    contains("d_ln_real_gdp_pc"),
+    contains("d_ln_crude_death_rate")
+  )) %>% na.omit()
+
+df_bp %>% colnames() %>% paste0(., collapse = " + ")
+
+plmtest(d_ln_real_gdp_pc ~ l1_d_ln_real_gdp_pc + l2_d_ln_real_gdp_pc + l3_d_ln_real_gdp_pc + l4_d_ln_real_gdp_pc + d_ln_crude_death_rate + l1_d_ln_crude_death_rate + l2_d_ln_crude_death_rate + l3_d_ln_crude_death_rate + l4_d_ln_crude_death_rate, 
+        data = df_bp, 
+        type = "bp")
+```
+

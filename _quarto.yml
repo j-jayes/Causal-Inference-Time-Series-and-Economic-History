@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Causal Inference Time Series and Economic History"
+  fav-icon: "images/favicon.ico"
+  navbar:
+    background: light
+    logo: images/favicon.ico
+    left:
+      - href: index.qmd
+        text: "Replication in R"
+    right:
+      - href: about.qmd
+        text: About
+      - icon: github
+        href: https://github.com/j-jayes/Causal-Inference-Time-Series-and-Economic-History
+  repo-url: "https://github.com/j-jayes/Causal-Inference-Time-Series-and-Economic-History"
+  page-footer: '© 2022'
+
+format:
+  html:
+    theme:
+      light: [cosmo, theme.scss]
+    toc: true
+
+editor: source
+

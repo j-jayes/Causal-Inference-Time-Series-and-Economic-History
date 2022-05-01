@@ -45,6 +45,9 @@ reg ln_RealGDPperCapita L2.ln_RealGDPperCapita
 predict Ham_Trend, xb
 predict Ham_Cycle, res
 
+tsline d.Ham_Cycle, ylabel(0(0.5)3.5) xlabel(1800(20)2000)
+
+
 * Comparison (Trends)
 
 label variable HP_Trend_6 "HP_Trend_6.25"
