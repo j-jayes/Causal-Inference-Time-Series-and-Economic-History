@@ -1,0 +1,106 @@
+---
+title: "Replication and Critique of Post-Malthusian Dynamicsin Pre-Industrial Scandinavia"
+---
+
+# Purpose
+
+Assessment: 2,500 word essay. Write a referee report that critically dscusses a paper in economic history, focussing on the strengths and weaknesses of the research design. You may modify or extend the analysis. Chose a paper that uses one of the quantitative techniques that we have discuessed in class. Due 5 September 2022.
+
+## Paper
+
+Post-Malthusian Dynamicsin Pre-Industrial Scandinavia by Marc Klemp and Niels Framroze Moller
+
+### What's it about?
+
+Is there a post-malthusian phase in the transition between stagnatio and growth in Scandinavia.
+
+#### What's gonna be hard?
+
+If there's a lot of different data and tests making them digestible is going to be difficult.
+
+Moller and Sharp 2014 "formulate and test a simple dynamic post-Malthusian model. Using an-nual series of real wages, marriage rates, birth rates, and death rates forpre-industrial England, they find evidence consistent with post-Malthusian dynamics emerging as early as the mid-16th century. Likewise, Klemp(2012) formulated and estimated a two-sector Malthusian model on pre-industrial English data and found evidence in favor of Malthusian dynamics exhibiting some post-Malthusian characteristics"
+
+
+## What to recreate?
+
+Table 1: exerpt of Maddison database. 
+
+```{r}
+library(tidyverse)
+
+df <- readxl::read_excel(here::here("data", "mpd2020.xlsx"), sheet = 4, skip = 1)
+
+df <- df %>% 
+  pivot_longer(-year) %>% 
+  filter(!is.na(value))
+
+library(countrycode)
+
+df <- df %>% 
+  mutate(country_name = countrycode(name, "iso3c", "country.name"))
+
+scandi <- c("Sweden", "Denmark", "Norway")
+
+df %>% 
+  filter(country_name %in% c(scandi, "United Kingdom")) %>% 
+  ggplot(aes(year, value, colour = country_name)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(xlim = c(1500, 1900)) +
+  scale_y_log10(labels = scales::dollar_format()) 
+
+df_2020 <- df %>% 
+  mutate(version = "2020")
+```
+
+Table 1: Old Maddison data
+
+```{r}
+df <- readxl::read_excel(here::here("data", "md2010.xlsx"), sheet = 4, skip = 2)
+
+df <- df %>% 
+  rename(year = ...1) %>% 
+  pivot_longer(-year, names_to = "country_name") %>% 
+  filter(!is.na(value)) %>% 
+  mutate(country_name = case_when(
+    country_name == "UK" ~ "United Kingdom",
+    TRUE ~ country_name
+  ))
+
+scandi <- c("Sweden", "Denmark", "Norway")
+
+df %>% 
+  filter(country_name %in% c(scandi, "United Kingdom")) %>% 
+  ggplot(aes(year, value, colour = country_name)) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(xlim = c(1500, 1900)) +
+  scale_y_log10(labels = scales::dollar_format()) 
+
+df_2010 <- df %>% 
+  mutate(name = countrycode(country_name, "country.name", "iso3c"),
+         version = "2010")
+```
+
+
+```{r}
+df <- df_2010 %>% 
+  bind_rows(df_2020)
+```
+
+
+First critique - which Maddison database to use??
+
+Was Sweden a poor as previously supposed?
+
+```{r}
+df %>% 
+  filter(country_name %in% c(scandi, "United Kingdom")) %>% 
+  ggplot(aes(year, value, colour = version)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~ country_name) +
+  coord_cartesian(xlim = c(1500, 1900)) +
+  scale_y_log10(labels = scales::dollar_format()) 
+```
+

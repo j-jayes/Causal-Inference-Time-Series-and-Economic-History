@@ -166,7 +166,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <ul class="collapse">
   <li><a href="#read-in-data" id="toc-read-in-data" class="nav-link" data-scroll-target="#read-in-data">Read in data</a></li>
   <li><a href="#changes" id="toc-changes" class="nav-link" data-scroll-target="#changes">Changes</a></li>
+  <li><a href="#what-about-using-the-recipes-package" id="toc-what-about-using-the-recipes-package" class="nav-link" data-scroll-target="#what-about-using-the-recipes-package">What about using the recipes package?</a></li>
   <li><a href="#approximately-reproduce-table-6" id="toc-approximately-reproduce-table-6" class="nav-link" data-scroll-target="#approximately-reproduce-table-6">(Approximately) Reproduce Table 6</a></li>
+  <li><a href="#first-regression-model" id="toc-first-regression-model" class="nav-link" data-scroll-target="#first-regression-model">First regression model</a></li>
+  <li><a href="#evaluate-the-residuals" id="toc-evaluate-the-residuals" class="nav-link" data-scroll-target="#evaluate-the-residuals">Evaluate the residuals</a></li>
+  <li><a href="#dickey-fuller-tests" id="toc-dickey-fuller-tests" class="nav-link" data-scroll-target="#dickey-fuller-tests">Dickey fuller tests</a></li>
+  <li><a href="#breuschpagan-test-to-check-heteroscedasticity" id="toc-breuschpagan-test-to-check-heteroscedasticity" class="nav-link" data-scroll-target="#breuschpagan-test-to-check-heteroscedasticity">Breusch–Pagan Test to Check Heteroscedasticity</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -229,18 +234,53 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  janitor<span class="sc">::</span><span class="fu">clean_names</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="changes" class="level3 page-columns page-full">
+<section id="changes" class="level3">
 <h3 class="anchored" data-anchor-id="changes">Changes</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">real_gdp_pc =</span> real_gdp <span class="sc">/</span> population,</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">real_agricultural_output_pc =</span> real_agricultural_output <span class="sc">/</span> population,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>         <span class="co"># logs</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>         <span class="fu">across</span>(<span class="fu">c</span>(crude_death_rate<span class="sc">:</span>real_wage, <span class="fu">contains</span>(<span class="st">"_pc"</span>)), log, <span class="at">.names =</span> <span class="st">"ln_{.col}"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">real_gdp_pc =</span> real_gdp <span class="sc">/</span> population,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">real_agricultural_output_pc =</span> real_agricultural_output <span class="sc">/</span> population,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create logs with prefix ln_</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(crude_death_rate<span class="sc">:</span>real_wage, <span class="fu">contains</span>(<span class="st">"_pc"</span>)), log, <span class="at">.names =</span> <span class="st">"ln_{.col}"</span>),</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># create differences with prefix d_</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(<span class="fu">contains</span>(<span class="st">"ln_"</span>)), <span class="sc">~</span> . <span class="sc">-</span> <span class="fu">lag</span>(., <span class="dv">1</span>), <span class="at">.names =</span> <span class="st">"d_{.col}"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now making the lags of the differenced variables: I don’t love this for loop - but I don’t know a better way yet. Perhaps using the <code>recipes</code> package?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(<span class="st">"making d_ for "</span>, i)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">starts_with</span>(<span class="st">"d_ln"</span>), <span class="sc">~</span> <span class="fu">lag</span>(., i), <span class="at">.names =</span> <span class="fu">paste0</span>(<span class="st">"l"</span>, i, <span class="st">"_{.col}"</span>)))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>making d_ for 1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>making d_ for 2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>making d_ for 3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>making d_ for 4</code></pre>
+</div>
+</div>
+</section>
+<section id="what-about-using-the-recipes-package" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="what-about-using-the-recipes-package">What about using the recipes package?</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># library(recipes)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># rec &lt;- recipe(d_ln_crude_death_rate ~ ., data = df) %&gt;% </span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   step_log(c(crude_death_rate:real_wage, contains("_pc")), id = rand_id(prefix = "ln_"))</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># rec %&gt;% prep() %&gt;% bake(new_data = NULL)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell page-columns page-full">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  skimr<span class="sc">::</span><span class="fu">skim</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  skimr<span class="sc">::</span><span class="fu">skim</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
 <table class="table table-sm table-striped">
 <caption>Data summary</caption>
@@ -255,7 +295,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Number of columns</td>
-<td style="text-align: left;">12</td>
+<td style="text-align: left;">32</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">_______________________</td>
@@ -267,7 +307,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 </tr>
 <tr class="even">
 <td style="text-align: left;">numeric</td>
-<td style="text-align: left;">12</td>
+<td style="text-align: left;">32</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">________________________</td>
@@ -282,17 +322,17 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <p><strong>Variable type: numeric</strong></p>
 <table class="table table-sm table-striped">
 <colgroup>
-<col style="width: 20%">
+<col style="width: 23%">
 <col style="width: 6%">
 <col style="width: 9%">
 <col style="width: 5%">
-<col style="width: 4%">
+<col style="width: 3%">
 <col style="width: 5%">
 <col style="width: 5%">
 <col style="width: 5%">
 <col style="width: 5%">
 <col style="width: 5%">
-<col style="width: 27%">
+<col style="width: 26%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -313,7 +353,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">year</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">1672.00</td>
 <td style="text-align: right;">73.76</td>
 <td style="text-align: right;">1545.00</td>
@@ -326,7 +366,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">crude_death_rate</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">27.50</td>
 <td style="text-align: right;">4.60</td>
 <td style="text-align: right;">19.20</td>
@@ -339,7 +379,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">real_wage</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">72.57</td>
 <td style="text-align: right;">11.34</td>
 <td style="text-align: right;">50.55</td>
@@ -352,7 +392,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">real_agricultural_output</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">106.56</td>
 <td style="text-align: right;">40.04</td>
 <td style="text-align: right;">41.51</td>
@@ -365,7 +405,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">real_gdp</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">92.79</td>
 <td style="text-align: right;">45.63</td>
 <td style="text-align: right;">32.46</td>
@@ -378,7 +418,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">population</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">99.86</td>
 <td style="text-align: right;">24.78</td>
 <td style="text-align: right;">55.98</td>
@@ -391,7 +431,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">real_gdp_pc</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">0.88</td>
 <td style="text-align: right;">0.23</td>
 <td style="text-align: right;">0.52</td>
@@ -404,7 +444,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">real_agricultural_output_pc</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">1.05</td>
 <td style="text-align: right;">0.19</td>
 <td style="text-align: right;">0.59</td>
@@ -417,7 +457,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">ln_crude_death_rate</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">3.30</td>
 <td style="text-align: right;">0.15</td>
 <td style="text-align: right;">2.95</td>
@@ -430,7 +470,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">ln_real_wage</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">4.27</td>
 <td style="text-align: right;">0.15</td>
 <td style="text-align: right;">3.92</td>
@@ -443,7 +483,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="odd">
 <td style="text-align: left;">ln_real_gdp_pc</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">-0.16</td>
 <td style="text-align: right;">0.26</td>
 <td style="text-align: right;">-0.64</td>
@@ -456,7 +496,7 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <tr class="even">
 <td style="text-align: left;">ln_real_agricultural_output_pc</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
 <td style="text-align: right;">0.03</td>
 <td style="text-align: right;">0.19</td>
 <td style="text-align: right;">-0.53</td>
@@ -465,6 +505,266 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <td style="text-align: right;">0.18</td>
 <td style="text-align: right;">0.43</td>
 <td style="text-align: left;">▁▃▆▇▃</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">d_ln_crude_death_rate</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">-0.50</td>
+<td style="text-align: right;">-0.07</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: left;">▁▂▇▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">d_ln_real_wage</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.11</td>
+<td style="text-align: right;">-0.35</td>
+<td style="text-align: right;">-0.06</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: left;">▁▃▇▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">d_ln_real_gdp_pc</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: left;">▁▁▇▃▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">d_ln_real_agricultural_output_pc</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.16</td>
+<td style="text-align: right;">-0.60</td>
+<td style="text-align: right;">-0.10</td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: left;">▁▁▇▅▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l1_d_ln_crude_death_rate</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">-0.50</td>
+<td style="text-align: right;">-0.07</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: left;">▁▂▇▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l1_d_ln_real_wage</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.11</td>
+<td style="text-align: right;">-0.35</td>
+<td style="text-align: right;">-0.06</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: left;">▁▃▇▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l1_d_ln_real_gdp_pc</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: left;">▁▁▇▃▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l1_d_ln_real_agricultural_output_pc</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.16</td>
+<td style="text-align: right;">-0.60</td>
+<td style="text-align: right;">-0.10</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: left;">▁▁▇▅▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l2_d_ln_crude_death_rate</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">-0.50</td>
+<td style="text-align: right;">-0.07</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: left;">▁▂▇▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l2_d_ln_real_wage</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.11</td>
+<td style="text-align: right;">-0.35</td>
+<td style="text-align: right;">-0.06</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: left;">▁▃▇▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l2_d_ln_real_gdp_pc</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.04</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: left;">▁▁▇▃▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l2_d_ln_real_agricultural_output_pc</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.16</td>
+<td style="text-align: right;">-0.60</td>
+<td style="text-align: right;">-0.10</td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: left;">▁▁▇▅▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l3_d_ln_crude_death_rate</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">-0.50</td>
+<td style="text-align: right;">-0.07</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: left;">▁▂▇▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l3_d_ln_real_wage</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.11</td>
+<td style="text-align: right;">-0.35</td>
+<td style="text-align: right;">-0.06</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: left;">▁▃▇▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l3_d_ln_real_gdp_pc</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: left;">▁▁▇▃▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l3_d_ln_real_agricultural_output_pc</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.16</td>
+<td style="text-align: right;">-0.60</td>
+<td style="text-align: right;">-0.10</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: left;">▁▁▇▅▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l4_d_ln_crude_death_rate</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.14</td>
+<td style="text-align: right;">-0.50</td>
+<td style="text-align: right;">-0.07</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.55</td>
+<td style="text-align: left;">▁▂▇▁▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l4_d_ln_real_wage</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.11</td>
+<td style="text-align: right;">-0.35</td>
+<td style="text-align: right;">-0.06</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.42</td>
+<td style="text-align: left;">▁▃▇▂▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">l4_d_ln_real_gdp_pc</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-0.04</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">0.26</td>
+<td style="text-align: left;">▁▁▇▃▁</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">l4_d_ln_real_agricultural_output_pc</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0.98</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.16</td>
+<td style="text-align: right;">-0.60</td>
+<td style="text-align: right;">-0.11</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: left;">▁▁▇▅▁</td>
 </tr>
 </tbody>
 </table>
@@ -479,8 +779,905 @@ x dplyr::lag()    masks stats::lag()</code></pre>
 <li>Change in crude death rate is dependent var</li>
 <li>5 time periods</li>
 </ul>
+<p>We should use the many models approach from R4DS because we’re doing similar regressions on different sections of the data frame.</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>periods <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">left =</span> <span class="fu">c</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1546</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1600</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1650</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1700</span>,</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1750</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>)) <span class="sc">%&gt;%</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">right =</span> <span class="fu">case_when</span>(</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      left <span class="sc">==</span> <span class="dv">1546</span> <span class="sc">~</span> <span class="dv">1599</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> left <span class="sc">+</span> <span class="dv">49</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">period =</span> <span class="fu">row_number</span>()</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>periods <span class="ot">&lt;-</span> periods <span class="sc">%&gt;%</span> </span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(period) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">paste0</span>(left<span class="sc">:</span>right, <span class="at">collapse =</span> <span class="st">", "</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate_rows</span>(year, <span class="at">sep =</span> <span class="st">", "</span>, <span class="at">convert =</span> T) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(left, right))</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>df_by_period <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(periods)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "year"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>df_by_period <span class="ot">&lt;-</span> df_by_period <span class="sc">%&gt;%</span> </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(period)) <span class="sc">%&gt;%</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(period) <span class="sc">%&gt;%</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Function to do regression</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>reg_model <span class="ot">&lt;-</span> <span class="cf">function</span>(df, vars){</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  df_temp <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(d_ln_crude_death_rate, vars)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lm</span>(d_ln_crude_death_rate <span class="sc">~</span> ., <span class="at">data =</span> df_temp)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="first-regression-model" class="level3">
+<h3 class="anchored" data-anchor-id="first-regression-model">First regression model</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>df_by_period_reg <span class="ot">&lt;-</span> df_by_period <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">model =</span> <span class="fu">map</span>(data, <span class="sc">~</span> <span class="fu">reg_model</span>(<span class="at">df =</span> .,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                                       <span class="at">vars =</span> </span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                         <span class="fu">c</span>(<span class="fu">contains</span>(<span class="st">"_d_ln_real_wage"</span>), </span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                           <span class="fu">contains</span>(<span class="st">"d_ln_crude_death_rate"</span>)))))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Note: Using an external vector in selections is ambiguous.
+i Use `all_of(vars)` instead of `vars` to silence this message.
+i See &lt;https://tidyselect.r-lib.org/reference/faq-external-vector.html&gt;.
+This message is displayed once per session.</code></pre>
+</div>
+</div>
+<p>What do the regression outputs look like?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>df_by_period_reg <span class="sc">%&gt;%</span> </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">summary =</span> <span class="fu">map</span>(model, summary)) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(summary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
 
+Call:
+lm(formula = d_ln_crude_death_rate ~ ., data = df_temp)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.29614 -0.06895 -0.00877  0.09223  0.37833 
+
+Coefficients:
+                         Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)              -0.01790    0.02110  -0.848 0.401214    
+l1_d_ln_real_wage        -0.38635    0.18148  -2.129 0.039318 *  
+l2_d_ln_real_wage        -0.74798    0.19933  -3.752 0.000543 ***
+l3_d_ln_real_wage        -0.28785    0.20773  -1.386 0.173331    
+l4_d_ln_real_wage        -0.41609    0.18345  -2.268 0.028655 *  
+l1_d_ln_crude_death_rate -0.21795    0.14858  -1.467 0.150030    
+l2_d_ln_crude_death_rate -0.39873    0.14154  -2.817 0.007422 ** 
+l3_d_ln_crude_death_rate -0.46959    0.12402  -3.786 0.000491 ***
+l4_d_ln_crude_death_rate -0.02081    0.14534  -0.143 0.886845    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1455 on 41 degrees of freedom
+  (4 observations deleted due to missingness)
+Multiple R-squared:  0.459, Adjusted R-squared:  0.3534 
+F-statistic: 4.348 on 8 and 41 DF,  p-value: 0.0007355
+
+
+[[2]]
+
+Call:
+lm(formula = d_ln_crude_death_rate ~ ., data = df_temp)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.23308 -0.08450 -0.01951  0.04716  0.40095 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)   
+(Intercept)              -0.003599   0.019679  -0.183  0.85579   
+l1_d_ln_real_wage        -0.669875   0.209793  -3.193  0.00270 **
+l2_d_ln_real_wage        -0.099300   0.236031  -0.421  0.67617   
+l3_d_ln_real_wage        -0.110009   0.223259  -0.493  0.62482   
+l4_d_ln_real_wage        -0.136204   0.217440  -0.626  0.53453   
+l1_d_ln_crude_death_rate -0.350978   0.153727  -2.283  0.02768 * 
+l2_d_ln_crude_death_rate -0.206345   0.142099  -1.452  0.15408   
+l3_d_ln_crude_death_rate -0.413009   0.138295  -2.986  0.00475 **
+l4_d_ln_crude_death_rate -0.193783   0.131117  -1.478  0.14706   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1387 on 41 degrees of freedom
+Multiple R-squared:  0.4041,    Adjusted R-squared:  0.2879 
+F-statistic: 3.476 on 8 and 41 DF,  p-value: 0.003795
+
+
+[[3]]
+
+Call:
+lm(formula = d_ln_crude_death_rate ~ ., data = df_temp)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.24972 -0.07429 -0.01702  0.04027  0.42011 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)   
+(Intercept)               0.007543   0.018804   0.401  0.69041   
+l1_d_ln_real_wage         0.226045   0.161795   1.397  0.16990   
+l2_d_ln_real_wage         0.110585   0.168958   0.655  0.51644   
+l3_d_ln_real_wage         0.225356   0.167501   1.345  0.18589   
+l4_d_ln_real_wage         0.132567   0.160166   0.828  0.41264   
+l1_d_ln_crude_death_rate -0.420488   0.158959  -2.645  0.01152 * 
+l2_d_ln_crude_death_rate -0.471103   0.158121  -2.979  0.00484 **
+l3_d_ln_crude_death_rate -0.331769   0.163544  -2.029  0.04903 * 
+l4_d_ln_crude_death_rate  0.011955   0.157786   0.076  0.93997   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1321 on 41 degrees of freedom
+Multiple R-squared:  0.3326,    Adjusted R-squared:  0.2024 
+F-statistic: 2.555 on 8 and 41 DF,  p-value: 0.02333
+
+
+[[4]]
+
+Call:
+lm(formula = d_ln_crude_death_rate ~ ., data = df_temp)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.203460 -0.049068  0.003584  0.041974  0.199835 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)  
+(Intercept)               0.004618   0.013619   0.339   0.7363  
+l1_d_ln_real_wage        -0.428433   0.183713  -2.332   0.0247 *
+l2_d_ln_real_wage        -0.164349   0.184840  -0.889   0.3791  
+l3_d_ln_real_wage        -0.250078   0.180839  -1.383   0.1742  
+l4_d_ln_real_wage         0.084341   0.183335   0.460   0.6479  
+l1_d_ln_crude_death_rate -0.032322   0.155396  -0.208   0.8363  
+l2_d_ln_crude_death_rate -0.229270   0.145303  -1.578   0.1223  
+l3_d_ln_crude_death_rate -0.256747   0.145251  -1.768   0.0846 .
+l4_d_ln_crude_death_rate  0.085290   0.153253   0.557   0.5809  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.09458 on 41 degrees of freedom
+Multiple R-squared:  0.3128,    Adjusted R-squared:  0.1787 
+F-statistic: 2.333 on 8 and 41 DF,  p-value: 0.03637
+
+
+[[5]]
+
+Call:
+lm(formula = d_ln_crude_death_rate ~ ., data = df_temp)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.108223 -0.031518 -0.005504  0.029754  0.093847 
+
+Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)   
+(Intercept)              -0.000632   0.007377  -0.086  0.93214   
+l1_d_ln_real_wage         0.180114   0.153033   1.177  0.24600   
+l2_d_ln_real_wage         0.193466   0.154924   1.249  0.21883   
+l3_d_ln_real_wage         0.357952   0.154271   2.320  0.02538 * 
+l4_d_ln_real_wage         0.460454   0.164170   2.805  0.00766 **
+l1_d_ln_crude_death_rate -0.473955   0.141671  -3.345  0.00177 **
+l2_d_ln_crude_death_rate -0.281857   0.142263  -1.981  0.05430 . 
+l3_d_ln_crude_death_rate -0.210367   0.143704  -1.464  0.15085   
+l4_d_ln_crude_death_rate  0.225747   0.145367   1.553  0.12812   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.05174 on 41 degrees of freedom
+Multiple R-squared:  0.4289,    Adjusted R-squared:  0.3175 
+F-statistic:  3.85 on 8 and 41 DF,  p-value: 0.001858</code></pre>
+</div>
+</div>
+<p>How can we format these better??</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>df_by_period_reg <span class="sc">%&gt;%</span> </span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">tidy =</span> <span class="fu">map</span>(model, <span class="sc">~</span> broom<span class="sc">::</span><span class="fu">tidy</span>(., <span class="at">conf.int =</span> T))) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(tidy) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(term <span class="sc">!=</span> <span class="st">"(Intercept)"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">term =</span> <span class="fu">fct_reorder</span>(term, estimate)) <span class="sc">%&gt;%</span> </span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(estimate, term, <span class="at">colour =</span> <span class="fu">factor</span>(period))) <span class="sc">+</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbarh</span>(<span class="fu">aes</span>(<span class="at">xmin =</span> conf.low, <span class="at">xmax =</span> conf.high)) <span class="sc">+</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> period) <span class="sc">+</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">0</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Kelly-and-O-Grada--2013-_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># df_by_period_reg %&gt;% </span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(reg = map(model, gtsummary::tbl_regression)) %&gt;% </span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   pull(reg)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>df_by_period_reg <span class="sc">%&gt;%</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">augment =</span> <span class="fu">map</span>(model, broom<span class="sc">::</span>augment)) <span class="sc">%&gt;%</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(augment) <span class="sc">%&gt;%</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># remove the first four NA years because of the lags (4 lags)</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(periods <span class="sc">%&gt;%</span> <span class="fu">tail</span>(<span class="dv">250</span>) <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>period)) <span class="sc">%&gt;%</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(year, .fitted, <span class="at">group =</span> period, <span class="at">colour =</span> <span class="fu">factor</span>(period))) <span class="sc">+</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'loess' and formula 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="Kelly-and-O-Grada--2013-_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="evaluate-the-residuals" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-the-residuals">Evaluate the residuals</h3>
+<p>Regression:</p>
+<p>dependent variable: first difference of logged crude death rate</p>
+<p>independent variables: lags 1 through 4 of first diff of ln crude death rate and first diff of ln real gdp per capita</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># reg d.LnCrudeDeathRate L(1/4)d.LnCrudeDeathRate L(0/4)d.LnRealGDPpc if tin(1546,1599)</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co"># predict Residuals if tin(1546,1599), res /* generate the residuals as a new variable */ </span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co"># tsline Residuals if tin(1546,1599) /* plot the residuals */</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gtsummary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'gtsummary' was built under R version 4.1.2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>reg_1 <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">between</span>(year, <span class="dv">1546</span>, <span class="dv">1599</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">c</span>(</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">contains</span>(<span class="st">"d_ln_real_gdp_pc"</span>),</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">contains</span>(<span class="st">"d_ln_crude_death_rate"</span>)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lm</span>(d_ln_crude_death_rate <span class="sc">~</span> ., <span class="at">data =</span> .)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>reg_1 <span class="sc">%&gt;%</span> </span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tbl_regression</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_significance_stars</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="dkhegdqpwu" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#dkhegdqpwu .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#dkhegdqpwu .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 6px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#dkhegdqpwu .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#dkhegdqpwu .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#dkhegdqpwu .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#dkhegdqpwu .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#dkhegdqpwu .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#dkhegdqpwu .gt_group_heading {
+  padding: 8px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dkhegdqpwu .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#dkhegdqpwu .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#dkhegdqpwu .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#dkhegdqpwu .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#dkhegdqpwu .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 12px;
+}
+
+#dkhegdqpwu .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dkhegdqpwu .gt_first_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#dkhegdqpwu .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#dkhegdqpwu .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dkhegdqpwu .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#dkhegdqpwu .gt_sourcenote {
+  font-size: 90%;
+  padding: 4px;
+}
+
+#dkhegdqpwu .gt_left {
+  text-align: left;
+}
+
+#dkhegdqpwu .gt_center {
+  text-align: center;
+}
+
+#dkhegdqpwu .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#dkhegdqpwu .gt_font_normal {
+  font-weight: normal;
+}
+
+#dkhegdqpwu .gt_font_bold {
+  font-weight: bold;
+}
+
+#dkhegdqpwu .gt_font_italic {
+  font-style: italic;
+}
+
+#dkhegdqpwu .gt_super {
+  font-size: 65%;
+}
+
+#dkhegdqpwu .gt_footnote_marks {
+  font-style: italic;
+  font-weight: normal;
+  font-size: 65%;
+}
+</style>
+<table class="gt_table">
+  
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1"><strong>Characteristic</strong></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1"><strong>Beta</strong><sup class="gt_footnote_marks">1</sup></th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1"><strong>SE</strong><sup class="gt_footnote_marks">2</sup></th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr><td class="gt_row gt_left">d_ln_real_gdp_pc</td>
+<td class="gt_row gt_center">0.33</td>
+<td class="gt_row gt_center">0.236</td></tr>
+    <tr><td class="gt_row gt_left">l1_d_ln_real_gdp_pc</td>
+<td class="gt_row gt_center">-0.59*</td>
+<td class="gt_row gt_center">0.260</td></tr>
+    <tr><td class="gt_row gt_left">l2_d_ln_real_gdp_pc</td>
+<td class="gt_row gt_center">-0.85**</td>
+<td class="gt_row gt_center">0.300</td></tr>
+    <tr><td class="gt_row gt_left">l3_d_ln_real_gdp_pc</td>
+<td class="gt_row gt_center">-0.84*</td>
+<td class="gt_row gt_center">0.325</td></tr>
+    <tr><td class="gt_row gt_left">l4_d_ln_real_gdp_pc</td>
+<td class="gt_row gt_center">-0.02</td>
+<td class="gt_row gt_center">0.309</td></tr>
+    <tr><td class="gt_row gt_left">l1_d_ln_crude_death_rate</td>
+<td class="gt_row gt_center">-0.30</td>
+<td class="gt_row gt_center">0.157</td></tr>
+    <tr><td class="gt_row gt_left">l2_d_ln_crude_death_rate</td>
+<td class="gt_row gt_center">-0.16</td>
+<td class="gt_row gt_center">0.142</td></tr>
+    <tr><td class="gt_row gt_left">l3_d_ln_crude_death_rate</td>
+<td class="gt_row gt_center">-0.30*</td>
+<td class="gt_row gt_center">0.133</td></tr>
+    <tr><td class="gt_row gt_left">l4_d_ln_crude_death_rate</td>
+<td class="gt_row gt_center">-0.03</td>
+<td class="gt_row gt_center">0.139</td></tr>
+  </tbody>
+  
+  <tfoot>
+    <tr class="gt_footnotes">
+      <td colspan="3">
+        <p class="gt_footnote">
+          <sup class="gt_footnote_marks">
+            <em>1</em>
+          </sup>
+           
+          *p&lt;0.05; **p&lt;0.01; ***p&lt;0.001
+          <br>
+        </p>
+        <p class="gt_footnote">
+          <sup class="gt_footnote_marks">
+            <em>2</em>
+          </sup>
+           
+          SE = Standard Error
+          <br>
+        </p>
+      </td>
+    </tr>
+  </tfoot>
+</table>
+</div>
+</div>
+</div>
+<p>Plot the residuals</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>reg_1_augmented <span class="ot">&lt;-</span> reg_1 <span class="sc">%&gt;%</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  broom<span class="sc">::</span><span class="fu">augment</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_cols</span>(periods <span class="sc">%&gt;%</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(year) <span class="sc">%&gt;%</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">slice</span>(5L<span class="sc">:</span>54L))</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>reg_1_augmented <span class="sc">%&gt;%</span> </span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(year, .resid)) <span class="sc">+</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">"red"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Kelly-and-O-Grada--2013-_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="dickey-fuller-tests" class="level3">
+<h3 class="anchored" data-anchor-id="dickey-fuller-tests">Dickey fuller tests</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(vars)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'vars' was built under R version 4.1.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: MASS</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'MASS'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:gtsummary':
+
+    select</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:dplyr':
+
+    select</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: strucchange</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'strucchange' was built under R version 4.1.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: zoo</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'zoo' was built under R version 4.1.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'zoo'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    as.Date, as.Date.numeric</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: sandwich</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'sandwich' was built under R version 4.1.3</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'strucchange'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:stringr':
+
+    boundary</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: urca</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: lmtest</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'lmtest' was built under R version 4.1.3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>adf_test_trend <span class="ot">&lt;-</span> <span class="fu">ur.df</span>(reg_1_augmented<span class="sc">$</span>.resid, <span class="at">type =</span> <span class="st">"trend"</span>)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>adf_test_trend <span class="sc">%&gt;%</span> <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+############################################### 
+# Augmented Dickey-Fuller Test Unit Root Test # 
+############################################### 
+
+Test regression trend 
+
+
+Call:
+lm(formula = z.diff ~ z.lag.1 + 1 + tt + z.diff.lag)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.284507 -0.087212  0.006262  0.081510  0.254474 
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  0.0219943  0.0395612   0.556 0.581057    
+z.lag.1     -0.9218949  0.2198818  -4.193 0.000131 ***
+tt          -0.0009444  0.0013623  -0.693 0.491768    
+z.diff.lag  -0.0474320  0.1569519  -0.302 0.763918    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1305 on 44 degrees of freedom
+Multiple R-squared:  0.4827,    Adjusted R-squared:  0.4474 
+F-statistic: 13.68 on 3 and 44 DF,  p-value: 1.93e-06
+
+
+Value of test-statistic is: -4.1927 5.9638 8.8931 
+
+Critical values for test statistics: 
+      1pct  5pct 10pct
+tau3 -4.15 -3.50 -3.18
+phi2  7.02  5.13  4.31
+phi3  9.31  6.73  5.61</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>adf_test_none <span class="ot">&lt;-</span> <span class="fu">ur.df</span>(reg_1_augmented<span class="sc">$</span>.resid, <span class="at">type =</span> <span class="st">"none"</span>)</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>adf_test_none <span class="sc">%&gt;%</span> <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+############################################### 
+# Augmented Dickey-Fuller Test Unit Root Test # 
+############################################### 
+
+Test regression none 
+
+
+Call:
+lm(formula = z.diff ~ z.lag.1 - 1 + z.diff.lag)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.293606 -0.089575 -0.004895  0.078174  0.269227 
+
+Coefficients:
+           Estimate Std. Error t value Pr(&gt;|t|)    
+z.lag.1    -0.91447    0.21562  -4.241 0.000106 ***
+z.diff.lag -0.04852    0.15399  -0.315 0.754134    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1283 on 46 degrees of freedom
+Multiple R-squared:  0.477, Adjusted R-squared:  0.4542 
+F-statistic: 20.97 on 2 and 46 DF,  p-value: 3.36e-07
+
+
+Value of test-statistic is: -4.2411 
+
+Critical values for test statistics: 
+      1pct  5pct 10pct
+tau1 -2.62 -1.95 -1.61</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>adf_test_drift <span class="ot">&lt;-</span> <span class="fu">ur.df</span>(reg_1_augmented<span class="sc">$</span>.resid, <span class="at">type =</span> <span class="st">"drift"</span>)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>adf_test_drift <span class="sc">%&gt;%</span> <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+############################################### 
+# Augmented Dickey-Fuller Test Unit Root Test # 
+############################################### 
+
+Test regression drift 
+
+
+Call:
+lm(formula = z.diff ~ z.lag.1 + 1 + z.diff.lag)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.29139 -0.08746 -0.00280  0.08031  0.27117 
+
+Coefficients:
+             Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept) -0.002111   0.018765  -0.112 0.910946    
+z.lag.1     -0.913223   0.218255  -4.184 0.000131 ***
+z.diff.lag  -0.049675   0.156010  -0.318 0.751649    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1297 on 45 degrees of freedom
+Multiple R-squared:  0.477, Adjusted R-squared:  0.4538 
+F-statistic: 20.52 on 2 and 45 DF,  p-value: 4.634e-07
+
+
+Value of test-statistic is: -4.1842 8.807 
+
+Critical values for test statistics: 
+      1pct  5pct 10pct
+tau2 -3.58 -2.93 -2.60
+phi1  7.06  4.86  3.94</code></pre>
+</div>
+</div>
+</section>
+<section id="breuschpagan-test-to-check-heteroscedasticity" class="level3">
+<h3 class="anchored" data-anchor-id="breuschpagan-test-to-check-heteroscedasticity">Breusch–Pagan Test to Check Heteroscedasticity</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># library(plm)</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a><span class="co"># df_bp &lt;- df %&gt;%</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::filter(dplyr::between(year, 1546, 1599)) %&gt;%</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::select(c(</span></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a><span class="co">#     contains("d_ln_real_gdp_pc"),</span></span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a><span class="co">#     contains("d_ln_crude_death_rate")</span></span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   )) %&gt;% na.omit()</span></span>
+<span id="cb58-9"><a href="#cb58-9" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb58-10"><a href="#cb58-10" aria-hidden="true" tabindex="-1"></a><span class="co"># df_bp %&gt;% colnames() %&gt;% paste0(., collapse = " + ")</span></span>
+<span id="cb58-11"><a href="#cb58-11" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb58-12"><a href="#cb58-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plmtest(d_ln_real_gdp_pc ~ l1_d_ln_real_gdp_pc + l2_d_ln_real_gdp_pc + l3_d_ln_real_gdp_pc + l4_d_ln_real_gdp_pc + d_ln_crude_death_rate + l1_d_ln_crude_death_rate + l2_d_ln_crude_death_rate + l3_d_ln_crude_death_rate + l4_d_ln_crude_death_rate, </span></span>
+<span id="cb58-13"><a href="#cb58-13" aria-hidden="true" tabindex="-1"></a><span class="co">#         data = df_bp, </span></span>
+<span id="cb58-14"><a href="#cb58-14" aria-hidden="true" tabindex="-1"></a><span class="co">#         type = "bp")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

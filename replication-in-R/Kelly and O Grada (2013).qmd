@@ -184,6 +184,8 @@ independent variables: lags 1 through 4 of first diff of ln crude death rate and
 ```
 
 ```{r}
+library(gtsummary)
+
 reg_1 <- df %>%
   filter(between(year, 1546, 1599)) %>%
   dplyr::select(c(
@@ -208,7 +210,9 @@ reg_1_augmented <- reg_1 %>%
 
 reg_1_augmented %>% 
   ggplot(aes(year, .resid)) +
-  geom_line(colour = "red")
+  geom_line(colour = "red") +
+  geom_smooth(method = "lm") +
+  geom_hline(yintercept = 0, lty = 2)
 ```
 
 ### Dickey fuller tests
@@ -234,22 +238,24 @@ adf_test_drift <- ur.df(reg_1_augmented$.resid, type = "drift")
 adf_test_drift %>% summary()
 ```
 
+Conclude that the residuals are stationary.
+
 ### Breusch–Pagan Test to Check Heteroscedasticity
 
 ```{r}
-library(plm)
-
-df_bp <- df %>%
-  dplyr::filter(dplyr::between(year, 1546, 1599)) %>%
-  dplyr::select(c(
-    contains("d_ln_real_gdp_pc"),
-    contains("d_ln_crude_death_rate")
-  )) %>% na.omit()
-
-df_bp %>% colnames() %>% paste0(., collapse = " + ")
-
-plmtest(d_ln_real_gdp_pc ~ l1_d_ln_real_gdp_pc + l2_d_ln_real_gdp_pc + l3_d_ln_real_gdp_pc + l4_d_ln_real_gdp_pc + d_ln_crude_death_rate + l1_d_ln_crude_death_rate + l2_d_ln_crude_death_rate + l3_d_ln_crude_death_rate + l4_d_ln_crude_death_rate, 
-        data = df_bp, 
-        type = "bp")
+# library(plm)
+# 
+# df_bp <- df %>%
+#   dplyr::filter(dplyr::between(year, 1546, 1599)) %>%
+#   dplyr::select(c(
+#     contains("d_ln_real_gdp_pc"),
+#     contains("d_ln_crude_death_rate")
+#   )) %>% na.omit()
+# 
+# df_bp %>% colnames() %>% paste0(., collapse = " + ")
+# 
+# plmtest(d_ln_real_gdp_pc ~ l1_d_ln_real_gdp_pc + l2_d_ln_real_gdp_pc + l3_d_ln_real_gdp_pc + l4_d_ln_real_gdp_pc + d_ln_crude_death_rate + l1_d_ln_crude_death_rate + l2_d_ln_crude_death_rate + l3_d_ln_crude_death_rate + l4_d_ln_crude_death_rate, 
+#         data = df_bp, 
+#         type = "bp")
 ```
 

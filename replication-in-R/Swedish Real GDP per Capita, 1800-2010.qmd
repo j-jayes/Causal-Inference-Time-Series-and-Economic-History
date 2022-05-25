@@ -115,7 +115,7 @@ plot_hp_filter(100, "hp_100")
 #| column: page
 # tsfilter hp HP_Cycle_10000 = ln_RealGDPperCapita, smooth(10000) trend(HP_Trend_10000)
 
-plot_hp_filter(1000, "hp_1000")
+plot_hp_filter(10000, "hp_10000")
 
 ```
 

@@ -231,14 +231,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="576"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="576"></p>
 </div>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">%&gt;%</span> </span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(year, ln_real_gdp_per_capita)) <span class="sc">+</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-6-2.png" class="img-fluid" width="576"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-3-2.png" class="img-fluid" width="576"></p>
 </div>
 </div>
 </section>
@@ -296,7 +296,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="cell page-columns page-full">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_hp_filter</span>(<span class="dv">100</span>, <span class="st">"hp_100"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -305,9 +305,9 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="cell page-columns page-full">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># tsfilter hp HP_Cycle_10000 = ln_RealGDPperCapita, smooth(10000) trend(HP_Trend_10000)</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_hp_filter</span>(<span class="dv">1000</span>, <span class="st">"hp_1000"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_hp_filter</span>(<span class="dv">10000</span>, <span class="st">"hp_10000"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -318,7 +318,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_hp_filter</span>(<span class="fl">6.25</span>, <span class="st">"hp_6_25"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -400,7 +400,7 @@ F-statistic:  3191 on 1 and 209 DF,  p-value: &lt; 2.2e-16
 [[2]]</code></pre>
 </div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -440,7 +440,7 @@ F-statistic: 1.117e+04 on 2 and 208 DF,  p-value: &lt; 2.2e-16
 [[2]]</code></pre>
 </div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -503,7 +503,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(year, value, <span class="at">colour =</span> name)) <span class="sc">+</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -537,7 +537,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="cn">NULL</span>,</span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="st">"Smoother"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -554,7 +554,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="cn">NULL</span>,</span>
 <span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="st">"Smoother"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -571,7 +571,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="cn">NULL</span>,</span>
 <span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">colour =</span> <span class="st">"Smoother"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 </section>
@@ -593,21 +593,23 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell-output-display">
 <table class="table table-sm table-striped">
 <colgroup>
-<col style="width: 19%">
-<col style="width: 9%">
+<col style="width: 17%">
+<col style="width: 8%">
+<col style="width: 10%">
+<col style="width: 10%">
 <col style="width: 11%">
-<col style="width: 12%">
 <col style="width: 11%">
-<col style="width: 19%">
-<col style="width: 15%">
+<col style="width: 17%">
+<col style="width: 13%">
 </colgroup>
 <thead>
 <tr class="header">
 <th style="text-align: left;">term</th>
 <th style="text-align: right;">hp_100</th>
 <th style="text-align: right;">hp_6_25</th>
-<th style="text-align: right;">hamilton</th>
 <th style="text-align: right;">hp_1000</th>
+<th style="text-align: right;">hamilton</th>
+<th style="text-align: right;">hp_10000</th>
 <th style="text-align: right;">quadratic_reg</th>
 <th style="text-align: right;">linear_reg</th>
 </tr>
@@ -615,6 +617,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">hp_100</td>
+<td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
@@ -630,40 +633,55 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">hamilton</td>
-<td style="text-align: right;">0.680</td>
-<td style="text-align: right;">0.742</td>
+<td style="text-align: left;">hp_1000</td>
+<td style="text-align: right;">0.947</td>
+<td style="text-align: right;">0.786</td>
+<td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">hp_1000</td>
-<td style="text-align: right;">0.947</td>
-<td style="text-align: right;">0.786</td>
+<td style="text-align: left;">hamilton</td>
+<td style="text-align: right;">0.680</td>
+<td style="text-align: right;">0.742</td>
 <td style="text-align: right;">0.603</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">quadratic_reg</td>
-<td style="text-align: right;">0.372</td>
-<td style="text-align: right;">0.296</td>
-<td style="text-align: right;">0.318</td>
-<td style="text-align: right;">0.449</td>
+<td style="text-align: left;">hp_10000</td>
+<td style="text-align: right;">0.819</td>
+<td style="text-align: right;">0.659</td>
+<td style="text-align: right;">0.942</td>
+<td style="text-align: right;">0.508</td>
+<td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 </tr>
 <tr class="even">
+<td style="text-align: left;">quadratic_reg</td>
+<td style="text-align: right;">0.372</td>
+<td style="text-align: right;">0.296</td>
+<td style="text-align: right;">0.449</td>
+<td style="text-align: right;">0.318</td>
+<td style="text-align: right;">0.576</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+</tr>
+<tr class="odd">
 <td style="text-align: left;">linear_reg</td>
 <td style="text-align: right;">0.144</td>
 <td style="text-align: right;">0.115</td>
-<td style="text-align: right;">-0.051</td>
 <td style="text-align: right;">0.175</td>
+<td style="text-align: right;">-0.051</td>
+<td style="text-align: right;">0.232</td>
 <td style="text-align: right;">0.387</td>
 <td style="text-align: right;">NA</td>
 </tr>
@@ -676,7 +694,7 @@ F-statistic: 8.824e+04 on 1 and 207 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>corr <span class="sc">%&gt;%</span> </span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rplot</span>(<span class="at">shape =</span> <span class="dv">15</span>, <span class="at">colours =</span> <span class="fu">c</span>(<span class="st">"darkorange"</span>, <span class="st">"darkcyan"</span>, <span class="st">"pink"</span>), <span class="at">print_cor =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display column-page">
-<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid" width="1152"></p>
+<p><img src="Swedish-Real-GDP-per-Capita,-1800-2010_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid" width="1152"></p>
 </div>
 </div>
 
