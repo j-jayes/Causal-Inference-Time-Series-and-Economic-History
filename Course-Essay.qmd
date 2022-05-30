@@ -104,3 +104,125 @@ df %>%
   scale_y_log10(labels = scales::dollar_format()) 
 ```
 
+
+```{r}
+df %>% 
+  filter(country_name %in% c(scandi, "United Kingdom")) %>% 
+  ggplot(aes(year, value, colour = country_name)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~ version, nrow = 2) +
+  coord_cartesian(xlim = c(1500, 1900)) +
+  scale_y_log10(labels = scales::dollar_format()) 
+```
+
+## Data
+
+"The estimation is based on yearly observations of real wages, crude birthrates (i.e., the number of births per thousand inhabitants), and crude deathrates (i.e., the number of births per thousand inhabitants) for Denmark,Norway, and Sweden."
+
+### Data Denmark
+
+"The crude demographic rates for Denmark are taken from Mitchell (1998, see their Table A6)"
+
+There is also data for Norway and Sweden in Mitchell. Let's do a comparison.
+
+Pages to extract data from: 112, 113, 116, 120, 123, 127, 130, 133, 134
+
+See ingestion files for data.
+
+```{r}
+df <- read_rds("data/mitchell_collected.rds")
+
+df %>%
+  # filter(country %in% c("Sweden", "Norway", "Denmark")) %>%
+  filter(country %in% c("Denmark")) %>%
+  ggplot(aes(year, value, colour = var)) +
+  geom_line() +
+  facet_wrap(~var, nrow = 3) +
+  labs(x = "Year",
+       y = "Value of metric per 1000 people",
+       title = "Births, deaths and marriages in Denmark",
+       subtitle = "Source: Mitchell 1998")
+```
+
+
+### Data Norway
+
+```{r}
+# url <- "https://www.ssb.no/a/folketellinger/tabeller/3-13.html"
+
+# library(rvest)
+# 
+# table <- read_html(url)
+# 
+# table <- table %>% 
+#   html_table()
+# 
+# table <- table[[3]]
+# 
+# headers <- table %>% 
+#   filter(row_number() == 2)
+# 
+# headers <- headers %>% 
+#   pivot_longer(everything()) %>% 
+#   select(value)
+# 
+# headers <- headers %>% 
+#   mutate(english = c("year",
+#                      "population",
+#                      "born",
+#                      "died",
+#                      "immigration",
+#                      "emmigration",
+#                      "married",
+#                      "born_out_of_wedlock",
+#                      "born_per_1000",
+#                      "died_per_1000",
+#                      "empty"))
+# 
+# headers <- headers %>% select(english) %>% pull()
+# 
+# table <- table %>% 
+#   filter(row_number() > 4)
+# 
+# colnames(table) <- headers
+# 
+# table <- table %>% 
+#   select(-empty) %>% 
+#   mutate(across(everything(), parse_number))
+# 
+# table <- table %>% 
+#   mutate(country_name = "Norway")
+
+# table %>% write_rds("data/norway_demographics.rds")
+table <- read_rds("data/norway_demographics.rds")
+```
+
+### Data Sweden
+
+```{r}
+df <- readxl::read_excel("data/Sweden_demographics_lu_madd.xls", range = "A6:F257") %>% janitor::clean_names()
+
+df <- df %>% 
+  filter(!is.na(year))
+
+df %>% 
+  select(-mid_population) %>% 
+  pivot_longer(-year) %>% 
+  ggplot(aes(year, value, colour = name)) +
+  geom_line()
+```
+
+Source: LU MADD - their source: Tabell 2.2 SCB. Demografiska rapporter 1999:2 " Befolkningsutvecklingen under 250 år"
+
+Swedish wages
+
+```{r}
+df <- read_rds("data/Joberg_day_wages_sweden.rds")
+
+df %>% 
+  ggplot(aes(year, average_price_1)) +
+  geom_line()
+```
+
+
