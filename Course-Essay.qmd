@@ -4,21 +4,61 @@ title: "Replication and Critique of Post-Malthusian Dynamicsin Pre-Industrial Sc
 
 # Purpose
 
-Assessment: 2,500 word essay. Write a referee report that critically dscusses a paper in economic history, focussing on the strengths and weaknesses of the research design. You may modify or extend the analysis. Chose a paper that uses one of the quantitative techniques that we have discuessed in class. Due 5 September 2022.
+Assessment: 2,500 word essay. Write a referee report that critically dscusses a paper in economic history, focussing on the strengths and weaknesses of the research design. You may modify or extend the analysis. Choose a paper that uses one of the quantitative techniques that we have discussed in class. Due 5 September 2022.
 
 ## Paper
 
-Post-Malthusian Dynamicsin Pre-Industrial Scandinavia by Marc Klemp and Niels Framroze Moller
+Post-Malthusian Dynamicsin Pre-Industrial Scandinavia by Marc Klemp and Niels Framroze Moller.
 
 ### What's it about?
 
-Is there a post-malthusian phase in the transition between stagnatio and growth in Scandinavia.
+Is there a post-Malthusian phase in the transition between stagnation and growth in Scandinavia.
 
 #### What's gonna be hard?
 
 If there's a lot of different data and tests making them digestible is going to be difficult.
 
-Moller and Sharp 2014 "formulate and test a simple dynamic post-Malthusian model. Using an-nual series of real wages, marriage rates, birth rates, and death rates forpre-industrial England, they find evidence consistent with post-Malthusian dynamics emerging as early as the mid-16th century. Likewise, Klemp(2012) formulated and estimated a two-sector Malthusian model on pre-industrial English data and found evidence in favor of Malthusian dynamics exhibiting some post-Malthusian characteristics"
+Moller and Sharp 2014 "formulate and test a simple dynamic post-Malthusian model. Using annual series of real wages, marriage rates, birth rates, and death rates for pre-industrial England, they find evidence consistent with post-Malthusian dynamics emerging as early as the mid-16th century. Likewise, Klemp(2012) formulated and estimated a two-sector Malthusian model on pre-industrial English data and found evidence in favor of Malthusian dynamics exhibiting some post-Malthusian characteristics"
+
+### How do they do the tests??
+
+3 steps:
+
+1. "formulation of statistically well-specified VAR models for relatively stable time periods that will function as the underlying general models against which the post-Malthusian hypothesis will be tested."
+
+2. "testing the joint restrictions imposed by the post-Malthusian hypothesis and at the same time estimating the parameters of interest."
+
+3. "examining the parameter stability and robustness of test conclusions, timings of transitions out of the post-Malthusian regimes and robustness of the results to specifications with no dummy variables an extended samples." 2 types of recursive estimations are preformed, forward-recursive estimation and rolling-windows estimation. 
+
+### What is their model like?
+
+real wages are degreasing in population and increasing in technology.
+
+feedback effects from living standards to demographic rates.
+
+### Comments
+
+Their choice to include dummies based on large residuals is a strange choice - like yes you're going to get white noise but you are removing information from your series. Including a level shift dummy instead of, say, a log transformation seems like such a sketchy idea. Maybe make a figure to show how the introduction of a level shift dummy instead of a more flexible model on the original data is a better plan. 
+
+You're trading off model parsimony while smoothing the underlying series...
+
+They say they "Following standard procedure in applied time-series econometrics, the analysis accounts for extraordinary events by including indicator variables, or dummy variables, in the form of impulse dummies and level shifts." p 855
+
+And that "these dummies are initially identified from large residuals" and that they "will work satisfactorily if these residuals result from important exogenous events that are thus unrelated to the theory model"
+
+What about doing smoothing or logs instead of exog level shifts???
+
+They say that the model is "robust to the use of models with no dummies" and if this is the case, why include the dummies to begin with?!?!?!?!?!?!!?!?!
+
+How can you compare a data generating process that changes so drastically with a war in Denmark that reduces both current population and land area - the concept of a nation that we have today is a bit different.
+
+choice to impose a dummy for a "shift in fertility in the years 1830-1854" is surely nonsense if you're interested in the relationship between wages and fertility. like you can't just say oh well there's a level shift here and so we are interested in changes so we ignore it.
+
+Big question do they use levels or logs??
+
+Argues for cointegreation of rank r = 2, no justification - why??
+
+
 
 ### What do I want to add??
 
@@ -220,6 +260,39 @@ df %>%
 
 Source: LU MADD - their source: Tabell 2.2 SCB. Demografiska rapporter 1999:2 " Befolkningsutvecklingen under 250 år"
 
+How about comparing the data from Mitchell with the data from th LU MADD?
+
+```{r}
+df <- read_rds("data/mitchell_collected.rds")
+
+df_mitchell <- df %>%
+  filter(country %in% c("Sweden")) %>% 
+  select(-country) %>% 
+  mutate(source = "Mitchell")
+
+df_lu_madd <- read_rds("data/sweden_demographics.rds") 
+
+df <- df_lu_madd %>% 
+  select(year,
+         B = live_births,
+         D = deaths) %>% 
+  pivot_longer(-year) %>% 
+  rename(var = name) %>% 
+  mutate(source = "LU MADD") %>% 
+  bind_rows(df_mitchell)
+
+df %>% 
+  filter(var != "M") %>% 
+  ggplot(aes(year, value, colour = source)) +
+  geom_line(alpha = .5) +
+  facet_wrap(~var, nrow = 3) +
+  labs(x = "Year",
+       y = "Value of metric per 1000 people",
+       title = "Births, deaths and marriages in Sweden",
+       subtitle = "Source: Mitchell 1998 & LU MADD")
+```
+
+
 Swedish wages
 
 ```{r}
@@ -234,7 +307,7 @@ Swedish wage deflator
 
 ```{r}
 library(datapasta)
-datapasta::df_paste()
+# datapasta::df_paste()
 
 df <- data.frame(
   stringsAsFactors = FALSE,
@@ -406,6 +479,8 @@ order <- df_sweden_changes %>%
   filter(value != "year") %>% 
   mutate(order = row_number())
 
+# df_sweden_changes %>% write_rds("data/df_sweden_changes.rds")
+
 df_sweden_changes %>% 
   pivot_longer(-year) %>% 
   inner_join(order, by = c("name" = "value")) %>% 
@@ -414,6 +489,102 @@ df_sweden_changes %>%
   geom_line() +
   facet_wrap(~ name, scales = "free")
 
+# df_sweden_changes %>% write.csv("data/df_sweden_changes.csv", row.names = F)
+
 ```
+
+
+## Analysis
+
+There are three parts to a time series paper.
+
+1. identification of appropriate functional form
+
+2. estimation of the model parameters
+
+3. diagnostic checks to assess the fit of the model.
+
+We deal with each of these in turn.
+
+### identifiaction of appropriate functional form
+
+First we need to plot for outliers. Highlighting 
+
+```{r}
+df_sweden_changes %>% 
+  pivot_longer(-year) %>% 
+  inner_join(order, by = c("name" = "value")) %>% 
+  mutate(name = fct_reorder(name, order)) %>% 
+  ggplot(aes(year, value, colour = name)) +
+  geom_line() +
+  facet_wrap(~ name, scales = "free")
+```
+
+Plot of the residuals
+
+```{r}
+df_sweden_changes %>%
+  lm(cbr ~ year, data = .) %>%
+  broom::augment() %>%
+  ggplot(aes(year, .resid)) +
+  geom_point() +
+  geom_segment(aes(x = year, xend = year, y = 0, yend = .resid))
+```
+
+
+Other thing we can do is a structural break test at the end of the period to see if it changes after 1873.
+
+Why do the authors choose this cutoff point?
+ 
+Durbin-Watson Test to Check Autocorrelation [here](https://www.codingprof.com/3-easy-ways-to-test-for-autocorrelation-in-r-examples/#:~:text=The%20first%20way%20to%20check,residuals%20of%20the%20regression%20model.)
+
+### estimation of the model parameters
+
+Here I need to explain that we are trading off parsimony with model fit.
+
+We need our data to be at least covarianc stationary - so that our tests are accurate.
+
+The AIC and BIC measure goodness of moel fit, accounting for the number of parameters. Much like a penalized regression model such as lasso, or ridge regression.
+
+Next we can do a chow test for structural breaks - Quandt lr test is a natual extension. 
+
+
+## Questions
+
+What does it mean to have a model that you're fitting on data from different contexts - do you still use th same functional form???
+
+I should also jut plot the idea of a post-malthusian era. 
+
+post malthusian phase - "scale effects of population growth prompt a rising rate of technolocial development, which ofsts the adverse malthusian effects of population size on income per capita, while there is a positive feedback effect from income per capita on population growth." p 845
+
+So what does it mean - that there is a simultaneous growth in population and not a decrease in income per capita, so then population grows more? 
+
+Definition of a VAR:
+
+"consists of a ser of K engenous variables, after including p lags of the endogenous variables, the VAR(p) model is defined as ...
+
+
+
+where Ai are K by K covariant martricies for each lag, and Ut is a K dimensional white noise process with time invariant positive definite covariance matrix.
+
+So we need that the errors have an expected value of zero and that the covariance between an error in one period and another is not time dependent.
+
+"As in the case of the univariate autoregressive model, the VAR model is covariance-stationary when the effect of the shocks, 
+u
+t
+, dissipate over time. This will be the case if the eigenvalues of the companion-form matrix are all less than one in absolute value. The eigenvalues of the matrix 
+Γ
+1
+ are represented by 
+λ
+ in the expression," - Kevin Kotze
+ 
+The process must be stable - so the series must fluctuate around a constant mean and havea constant variance.
+
+
+
+
+
+In the 1800s, Sweden experienced a period of post-Malthusian dynamics, characterized by a decline in mortality rates and an increase in fertility rates. This led to a population boom, which in turn led to economic growth and an increase in the standard of living. The post-Malthusian dynamics in Sweden were largely due to improvements in medical care and public health, as well as increased food production. 
 
 
