@@ -4,7 +4,7 @@ title: "Replication and Critique of Post-Malthusian Dynamicsin Pre-Industrial Sc
 
 # Purpose
 
-Assessment: 2,500 word essay. Write a referee report that critically dscusses a paper in economic history, focussing on the strengths and weaknesses of the research design. You may modify or extend the analysis. Choose a paper that uses one of the quantitative techniques that we have discussed in class. Due 5 September 2022.
+Assessment: 2,500 word essay. Write a referee report that critically discusses a paper in economic history, focussing on the strengths and weaknesses of the research design. You may modify or extend the analysis. Choose a paper that uses one of the quantitative techniques that we have discussed in class. Due 5 September 2022.
 
 ## Paper
 
@@ -19,6 +19,14 @@ Is there a post-Malthusian phase in the transition between stagnation and growth
 If there's a lot of different data and tests making them digestible is going to be difficult.
 
 Moller and Sharp 2014 "formulate and test a simple dynamic post-Malthusian model. Using annual series of real wages, marriage rates, birth rates, and death rates for pre-industrial England, they find evidence consistent with post-Malthusian dynamics emerging as early as the mid-16th century. Likewise, Klemp(2012) formulated and estimated a two-sector Malthusian model on pre-industrial English data and found evidence in favor of Malthusian dynamics exhibiting some post-Malthusian characteristics"
+
+## Planning
+
+1. a bit about how you choose to exclude data by eye.
+
+2. a bit about the estimation procedure.
+
+3. a replication. work on this next.
 
 ### How do they do the tests??
 
@@ -58,7 +66,37 @@ Big question do they use levels or logs??
 
 Argues for cointegreation of rank r = 2, no justification - why??
 
+### removal of important years
 
+The authors argue that in order to acquire an unrestricted VAR model that are specified in a "statistically satisfactory" (p 885) way, they will exclude some years that do not fit the pattern they want to model, specifically excluding years of poor harvest in Sweden and Norway, and the period of high inflation in Denmark following the "bankruptcy of the Danish state in 1813" (p 885).
+
+table; results of trace tests of co-integration for rank r = 2. Dummy variables for Sweden include Russo-Swedish War of 1808-1809 and smallpox outbreak of 1825.
+
+They get P-value of .32 without and .15 including dummies.
+
+tests for specification: no autocorrelation, normality, homoskedasticity.
+
+Autocorrelation in the errors is convincingly rejected.
+
+Assumed constant parameters, alternative they also do is use forward recursive estimation and one with rolling windows of 40 years. 
+
+estimates of the coeffeicients in the co-integration matrix in the table.
+
+Sweden estimation results:
+
+1. VAR with 2 lags. 
+
+what are the joint restrictions?
+
+findings: "analysis provides evidence in favor of post-malthusian dynamics in Sweden over the time period 1776-1853,
+
+Sweden recursive analyses: 
+
+"Post-Malthusian model can be accepted throughout the period, and both estimated check coefficients are significant for the majority of the sample." 862.
+
+overall results: "all three countries results support the post-Malthusian model in which technological progress raises incomes and spurs population growth while offsetting diminishing returns to labour." 863
+
+if the results don't depend on the dummies perhaps they do depend on trimming the data at the beginning of the period.
 
 ### What do I want to add??
 
@@ -487,7 +525,25 @@ df_sweden_changes %>%
   mutate(name = fct_reorder(name, order)) %>% 
   ggplot(aes(year, value, colour = name)) +
   geom_line() +
-  facet_wrap(~ name, scales = "free")
+  facet_wrap(~ name, scales = "free") +
+  theme(legend.position = "none")
+```
+
+Adding in smoothed lines
+
+```{r}
+df_sweden_changes %>% 
+  pivot_longer(-year) %>% 
+  inner_join(order, by = c("name" = "value")) %>% 
+  mutate(name = fct_reorder(name, order)) %>% 
+  ggplot(aes(year, value, colour = name)) +
+  geom_line() +
+  geom_smooth(se = F) +
+  facet_wrap(~ name, scales = "free") +
+  theme(legend.position = "none") +
+  labs(caption = "Trend shown with Locally Weighted Scatterplot Smoothing line",
+       x = "Year",
+       y = NULL)
 
 # df_sweden_changes %>% write.csv("data/df_sweden_changes.csv", row.names = F)
 
@@ -495,6 +551,37 @@ df_sweden_changes %>%
 
 
 ## Analysis
+
+First - I want to make a comment about the basic argument - do they show a graph of post-Malthusian dynamics in Scandinavia? What would it look like to convince me that it had taken case? 
+
+We would want to see co-occurrence of increasing population size that does not result in a decrease in income per capita. Let's break it into five year chunks and then show when there was increasing population size and look at what income per capita looked like?
+
+```{r}
+time_lump <- 5
+
+df_sweden_chunks <- df_sweden %>% 
+  mutate(time_chunk = year - year %% time_lump) %>% 
+  pivot_longer(-c(year, time_chunk)) %>% 
+  group_by(time_chunk, name) %>% 
+  mutate(value_avg = mean(value))
+
+df_sweden_chunks 
+
+df_lu_madd %>% 
+  select(year, mid_population, population_growth) %>% 
+  mutate(time_chunk = year - year %% time_lump) %>% 
+  group_by(time_chunk) %>% 
+  mutate(mid_population_avg = mean(mid_population),
+         population_growth_avg = mean(population_growth)) %>% 
+  ungroup() %>% 
+  select(year, population_growth, population_growth_avg) %>%
+  inner_join(df_sweden %>% select(year, real_wage)) %>% 
+  mutate(ratio = real_wage / population_growth_avg) %>% 
+  ggplot(aes(year, ratio)) +
+  geom_line()
+
+```
+
 
 There are three parts to a time series paper.
 
@@ -587,4 +674,124 @@ The process must be stable - so the series must fluctuate around a constant mean
 
 In the 1800s, Sweden experienced a period of post-Malthusian dynamics, characterized by a decline in mortality rates and an increase in fertility rates. This led to a population boom, which in turn led to economic growth and an increase in the standard of living. The post-Malthusian dynamics in Sweden were largely due to improvements in medical care and public health, as well as increased food production. 
 
+## VAR
+
+Construction of the VAR model. We will make use of the time series modelling library called `vars` in R.
+
+First we set up the univariate time series objects from the dataframe, noting a frequency of one year. Here the abbreviation `cbr` stands for crude birth rate. Similarly, `cdr` represents the series on the crude death rate.
+
+```{r}
+# devtools::install_github("KevinKotze/tsm")
+library(tsm)
+library(vars)
+
+df_sweden_changes
+
+df_sweden_changes_fd <- df_sweden_changes %>% 
+  filter(year > 1777)
+
+# levels
+cbr <- ts(df_sweden_changes$cbr, start = 1777, freq = 1)
+cdr <- ts(df_sweden_changes$cdr, start = 1777, freq = 1)
+real_wage <- ts(df_sweden_changes$real_wage, start = 1777, freq = 1)
+# first differences
+
+fd_cbr <- ts(df_sweden_changes_fd$fd_cbr, start = 1777, freq = 1)
+fd_cdr <- ts(df_sweden_changes_fd$fd_cdr, start = 1777, freq = 1)
+fd_real_wage <- ts(df_sweden_changes_fd$fd_real_wage, start = 1777, freq = 1)
+
+```
+
+Auto correlation functions: consider persistence. We can see that there is a high degree of persistence in the level variables, particularly the crude death rate and real wage series in Sweden.
+
+Consequently it is more advisable to work with the variables in first differences. The disadvatange is that we effectively lose one observation, but 
+
+```{r}
+# function to combine the series
+get_acf_pacf <- function(ts_obj, name) {
+  acf_pacf_obj <- ac(ts_obj)
+
+  acf_pacf_obj %>%
+    as_tibble() %>%
+    mutate(
+      lag = row_number(),
+      var = name
+    ) %>%
+    nest(data = everything())
+}
+
+acf_pacf <- get_acf_pacf(cbr, "cbr") %>%
+  bind_rows(get_acf_pacf(cdr, "cdr")) %>%
+  bind_rows(get_acf_pacf(real_wage, "real_wage")) %>%
+  bind_rows(get_acf_pacf(fd_cbr, "fd_cbr")) %>%
+  bind_rows(get_acf_pacf(fd_cdr, "fd_cdr")) %>%
+  bind_rows(get_acf_pacf(fd_real_wage, "fd_real_wage")) %>%
+  unnest(data)
+
+draw_acf_pacf <- function(tbl) {
+  tbl %>%
+    pivot_longer(-c(lag, var)) %>%
+    mutate(var = factor(var, levels = c("cbr", "cdr", "real_wage", "fd_cbr", "fd_cdr", "fd_real_wage"))) %>%
+    ggplot(aes(lag, value, fill = name)) +
+    geom_col(position = "dodge") +
+    scale_fill_brewer(palette = "Dark2") +
+    facet_wrap(~var) +
+    labs(
+      y = NULL,
+      fill = NULL,
+      x = "Lag number"
+    )
+}
+
+draw_acf_pacf(acf_pacf)
+
+```
+
+DF tests...
+
+```{r}
+adf.cbr <- ur.df(cbr, type = "trend", selectlags = "AIC")
+summary(adf.cbr)
+
+```
+
+## Model selection and estimation
+
+```{r}
+dat.tv <- cbind(fd_cbr, fd_cdr, fd_real_wage)
+colnames(dat.tv) <- c("fd_cbr", "fd_cdr", "fd_real_wage")
+
+info.tv <- VARselect(dat.tv, lag.max = 12, type = "const")
+info.tv$selection
+```
+
+
+### Running in the var
+
+```{r}
+tv.est <- VAR(dat.tv,
+  p = 2, type = "const", season = NULL,
+  exog = NULL
+)
+summary(tv.est)
+```
+
+### Testing model fit
+
+```{r}
+tv.serial <- serial.test(tv.est, lags.pt = 12, type = "PT.asymptotic")
+tv.serial
+
+summary(tv.serial)
+
+plot(tv.serial, names = "fd_real_wage")
+
+tv.serial$resid
+tv.serial$serial$p.value
+
+tv.serial$serial$p.value
+
+```
+
+To interpret these statistics note that a p-value that is greater than 5% would generally indicate that there is an absence of serial correlation. To test for heteroscedasticity in the residuals we can perform a multivariate ARCH Lagrange-Multiplier test.
 
